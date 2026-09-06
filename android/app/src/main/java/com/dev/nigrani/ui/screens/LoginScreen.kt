@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -43,12 +44,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dev.nigrani.R
 
 
 @Composable
 fun LoginScreen(
     onLoginClick: () -> Unit
-) {
+)
+{
 
     var officialId by remember {
         mutableStateOf("")
@@ -91,11 +94,10 @@ fun LoginScreen(
 
             // Government emblem
 
-            Icon(
-                imageVector = Icons.Outlined.AccountBalance,
+            Image(
+                painter = painterResource(R.drawable.ic_emblem),
                 contentDescription = "Government emblem",
-                modifier = Modifier.size(58.dp),
-                tint = MaterialTheme.colorScheme.onBackground
+                modifier = Modifier.size(180.dp),
             )
 
             Spacer(

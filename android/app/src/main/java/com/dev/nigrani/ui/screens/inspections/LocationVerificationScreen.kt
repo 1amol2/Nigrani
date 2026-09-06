@@ -8,7 +8,6 @@ import android.location.LocationManager
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -29,17 +28,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Refresh
 
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,16 +53,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-import androidx.core.content.ContextCompat
+import androidx.core.app.ActivityCompat
+import androidx.core.location.LocationManagerCompat
 
 import com.google.android.gms.location.CurrentLocationRequest
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.google.android.gms.tasks.CancellationTokenSource
 
 
 @Composable
@@ -73,9 +74,7 @@ fun LocationVerificationScreen(
     onContinueClick: () -> Unit = {}
 ) {
 
-    // ========================================================================
-    // CURRENT INSPECTION
-    // ========================================================================
+    val context = LocalContext.current
 
     val currentInspection = inspection ?: InspectionItem(
         id = "INS-2026-0905-014",
@@ -87,35 +86,34 @@ fun LocationVerificationScreen(
         priority = "Critical",
         status = "Assigned",
         reason = "Attendance anomaly detected",
-
-        // Temporary demo coordinates
         latitude = 25.3176,
         longitude = 82.9739,
         allowedRadiusMeters = 100f
     )
 
-
-    // ========================================================================
-    // CONTEXT
-    // ========================================================================
-
-    val context = androidx.compose.ui.platform.LocalContext.current
-
-
-    // ========================================================================
-    // STATE
-    // ========================================================================
-
-    var isVerifying by remember {
-        mutableStateOf(false)
-    }
+    val fusedLocationClient: FusedLocationProviderClient =
+        remember {
+            LocationServices.getFusedLocationProviderClient(context)
+        }
 
     var locationVerified by remember {
         mutableStateOf(false)
     }
 
+    var isLoading by remember {
+        mutableStateOf(false)
+    }
+
     var errorMessage by remember {
         mutableStateOf<String?>(null)
+    }
+
+    var distanceMeters by remember {
+        mutableStateOf<Float?>(null)
+    }
+
+    var accuracyMeters by remember {
+        mutableStateOf<Float?>(null)
     }
 
     var currentLatitude by remember {
@@ -126,149 +124,281 @@ fun LocationVerificationScreen(
         mutableStateOf<Double?>(null)
     }
 
-    var gpsAccuracy by remember {
-        mutableStateOf<Float?>(null)
-    }
-
-    var distanceFromInstitute by remember {
-        mutableStateOf<Float?>(null)
+    var isTestLocation by remember {
+        mutableStateOf(false)
     }
 
 
-    // ========================================================================
+    // ================================================================
+    // REAL GPS VERIFICATION
+    // ================================================================
+
+    fun verifyCurrentLocation() {
+
+        errorMessage = null
+        isLoading = true
+        locationVerified = false
+        isTestLocation = false
+
+        val locationManager =
+            context.getSystemService(Context.LOCATION_SERVICE)
+                    as LocationManager
+
+        if (!LocationManagerCompat.isLocationEnabled(locationManager)) {
+
+            isLoading = false
+
+            errorMessage =
+                "Location services are turned off. Please enable GPS and try again."
+
+            return
+        }
+
+        val hasFineLocation =
+            ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+        val hasCoarseLocation =
+            ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+        if (!hasFineLocation && !hasCoarseLocation) {
+
+            isLoading = false
+
+            errorMessage =
+                "Location permission is required to verify the inspection location."
+
+            return
+        }
+
+        val request =
+            CurrentLocationRequest.Builder()
+                .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+                .setMaxUpdateAgeMillis(5000)
+                .setDurationMillis(15000)
+                .build()
+
+        try {
+
+            fusedLocationClient
+                .getCurrentLocation(
+                    request,
+                    null
+                )
+                .addOnSuccessListener { location ->
+
+                    isLoading = false
+
+                    if (location == null) {
+
+                        errorMessage =
+                            "Unable to get your current location. Please try again."
+
+                        return@addOnSuccessListener
+                    }
+
+                    val accuracy =
+                        location.accuracy
+
+                    currentLatitude =
+                        location.latitude
+
+                    currentLongitude =
+                        location.longitude
+
+                    accuracyMeters =
+                        accuracy
+
+                    if (accuracy <= 0f || accuracy > 50f) {
+
+                        errorMessage =
+                            "GPS accuracy is too low. Current accuracy: ${
+                                if (accuracy > 0) {
+                                    "${accuracy.toInt()} m"
+                                } else {
+                                    "Unavailable"
+                                }
+                            }"
+
+                        return@addOnSuccessListener
+                    }
+
+                    val result =
+                        FloatArray(1)
+
+                    Location.distanceBetween(
+                        location.latitude,
+                        location.longitude,
+                        currentInspection.latitude,
+                        currentInspection.longitude,
+                        result
+                    )
+
+                    val distance =
+                        result[0]
+
+                    distanceMeters =
+                        distance
+
+                    if (
+                        distance <=
+                        currentInspection.allowedRadiusMeters
+                    ) {
+
+                        locationVerified =
+                            true
+
+                        errorMessage =
+                            null
+
+                    } else {
+
+                        locationVerified =
+                            false
+
+                        errorMessage =
+                            "You are outside the permitted inspection radius."
+                    }
+                }
+                .addOnFailureListener { exception ->
+
+                    isLoading = false
+
+                    errorMessage =
+                        exception.message
+                            ?: "Unable to obtain your current location."
+                }
+
+        } catch (e: SecurityException) {
+
+            isLoading = false
+
+            errorMessage =
+                "Location permission is required."
+        }
+    }
+
+
+    // ================================================================
+    // TEST LOCATION
+    // ================================================================
+
+    fun useTestLocation() {
+
+        isLoading = false
+        errorMessage = null
+
+        isTestLocation = true
+        locationVerified = true
+
+        // Simulate being exactly at the institute.
+        currentLatitude =
+            currentInspection.latitude
+
+        currentLongitude =
+            currentInspection.longitude
+
+        distanceMeters =
+            0f
+
+        accuracyMeters =
+            5f
+    }
+
+
+    // ================================================================
     // PERMISSION REQUEST
-    // ========================================================================
+    // ================================================================
 
-    val locationPermissionLauncher =
+    val permissionLauncher =
         rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
+            contract =
+                ActivityResultContracts.RequestMultiplePermissions()
         ) { permissions ->
 
-            val fineLocationGranted =
+            val fineGranted =
                 permissions[
                     Manifest.permission.ACCESS_FINE_LOCATION
                 ] == true
 
-            if (fineLocationGranted) {
+            val coarseGranted =
+                permissions[
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ] == true
 
-                startLocationVerification(
-                    context = context,
-                    targetLatitude = currentInspection.latitude,
-                    targetLongitude = currentInspection.longitude,
-                    allowedRadiusMeters =
-                        currentInspection.allowedRadiusMeters,
+            if (fineGranted || coarseGranted) {
 
-                    onStarted = {
-                        isVerifying = true
-                        errorMessage = null
-                        locationVerified = false
-                    },
-
-                    onLocationReceived = { location, distance ->
-
-                        isVerifying = false
-
-                        currentLatitude =
-                            location.latitude
-
-                        currentLongitude =
-                            location.longitude
-
-                        gpsAccuracy =
-                            location.accuracy
-
-                        distanceFromInstitute =
-                            distance
-
-                        val accurateEnough =
-                            location.hasAccuracy() &&
-                                    location.accuracy <= 50f
-
-                        val insideRadius =
-                            distance <=
-                                    currentInspection.allowedRadiusMeters
-
-                        when {
-
-                            !accurateEnough -> {
-
-                                locationVerified = false
-
-                                errorMessage =
-                                    "GPS accuracy is too low. " +
-                                            "Move to an open area and try again."
-                            }
-
-                            !insideRadius -> {
-
-                                locationVerified = false
-
-                                errorMessage =
-                                    "You are ${formatDistance(distance)} " +
-                                            "away from the institute. " +
-                                            "The permitted radius is " +
-                                            "${currentInspection.allowedRadiusMeters.toInt()} metres."
-                            }
-
-                            else -> {
-
-                                locationVerified = true
-                                errorMessage = null
-                            }
-                        }
-                    },
-
-                    onError = { message ->
-
-                        isVerifying = false
-                        locationVerified = false
-                        errorMessage = message
-                    }
-                )
+                verifyCurrentLocation()
 
             } else {
 
-                isVerifying = false
-                locationVerified = false
-
                 errorMessage =
-                    "Precise location permission is required. " +
-                            "Please allow precise location for Nigrani."
+                    "Location permission was denied. Please allow location access."
             }
         }
 
 
-    // ========================================================================
-    // SCROLL
-    // ========================================================================
+    fun startVerification() {
 
-    val scrollState = rememberScrollState()
+        val fineGranted =
+            ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+        val coarseGranted =
+            ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+        if (fineGranted || coarseGranted) {
+
+            verifyCurrentLocation()
+
+        } else {
+
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
 
 
-    // ========================================================================
-    // SCREEN
-    // ========================================================================
+    val scrollState =
+        rememberScrollState()
+
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                MaterialTheme.colorScheme.background
-            )
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(
+                    MaterialTheme.colorScheme.background
+                )
     ) {
 
-        // ====================================================================
+        // ============================================================
         // TOP BAR
-        // ====================================================================
+        // ============================================================
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(
-                    horizontal = 8.dp,
-                    vertical = 8.dp
-                ),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(
+                        horizontal = 8.dp,
+                        vertical = 8.dp
+                    ),
 
             verticalAlignment =
                 Alignment.CenterVertically
@@ -283,10 +413,7 @@ fun LocationVerificationScreen(
                         Icons.Default.ArrowBack,
 
                     contentDescription =
-                        "Back",
-
-                    tint =
-                        MaterialTheme.colorScheme.onBackground
+                        "Back"
                 )
             }
 
@@ -302,10 +429,7 @@ fun LocationVerificationScreen(
                     20.sp,
 
                 fontWeight =
-                    FontWeight.Bold,
-
-                color =
-                    MaterialTheme.colorScheme.onBackground
+                    FontWeight.Bold
             )
 
 
@@ -318,24 +442,22 @@ fun LocationVerificationScreen(
                         Icons.Default.Notifications,
 
                     contentDescription =
-                        "Notifications",
-
-                    tint =
-                        MaterialTheme.colorScheme.onBackground
+                        "Notifications"
                 )
             }
         }
 
 
-        // ====================================================================
+        // ============================================================
         // CONTENT
-        // ====================================================================
+        // ============================================================
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(horizontal = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 16.dp),
 
             verticalArrangement =
                 Arrangement.spacedBy(14.dp)
@@ -347,9 +469,9 @@ fun LocationVerificationScreen(
             )
 
 
-            // =================================================================
-            // INTRO CARD
-            // =================================================================
+            // ========================================================
+            // HEADER
+            // ========================================================
 
             Card(
                 modifier =
@@ -439,8 +561,7 @@ fun LocationVerificationScreen(
 
                         Text(
                             text =
-                                "Your device GPS will be used to confirm " +
-                                        "that you are physically present at the institute.",
+                                "Confirm that you are physically present at the institute.",
 
                             fontSize =
                                 12.sp,
@@ -456,13 +577,25 @@ fun LocationVerificationScreen(
             }
 
 
-            // =================================================================
-            // INSPECTION LOCATION
-            // =================================================================
+            // ========================================================
+            // INSTITUTE
+            // ========================================================
 
-            SectionTitle(
+            Text(
                 text =
-                    "INSPECTION LOCATION"
+                    "INSPECTION LOCATION",
+
+                fontSize =
+                    11.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color =
+                    Color(0xFF64748B),
+
+                letterSpacing =
+                    0.5.sp
             )
 
 
@@ -499,10 +632,7 @@ fun LocationVerificationScreen(
                             17.sp,
 
                         fontWeight =
-                            FontWeight.Bold,
-
-                        color =
-                            MaterialTheme.colorScheme.onSurface
+                            FontWeight.Bold
                     )
 
 
@@ -549,47 +679,29 @@ fun LocationVerificationScreen(
                                 Color(0xFF64748B)
                         )
                     }
-
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(10.dp)
-                    )
-
-
-                    InfoRow(
-                        label =
-                            "Inspection ID",
-
-                        value =
-                            currentInspection.id
-                    )
-
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(8.dp)
-                    )
-
-
-                    InfoRow(
-                        label =
-                            "Permitted radius",
-
-                        value =
-                            "${currentInspection.allowedRadiusMeters.toInt()} metres"
-                    )
                 }
             }
 
 
-            // =================================================================
-            // LIVE GPS
-            // =================================================================
+            // ========================================================
+            // CURRENT LOCATION
+            // ========================================================
 
-            SectionTitle(
+            Text(
                 text =
-                    "LIVE GPS LOCATION"
+                    "CURRENT LOCATION",
+
+                fontSize =
+                    11.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color =
+                    Color(0xFF64748B),
+
+                letterSpacing =
+                    0.5.sp
             )
 
 
@@ -646,17 +758,7 @@ fun LocationVerificationScreen(
                                     Modifier.size(30.dp),
 
                                 tint =
-                                    when {
-
-                                        locationVerified ->
-                                            Color(0xFF16A34A)
-
-                                        isVerifying ->
-                                            Color(0xFF2563A6)
-
-                                        else ->
-                                            Color(0xFF174A7E)
-                                    }
+                                    Color(0xFF174A7E)
                             )
                         }
 
@@ -671,14 +773,11 @@ fun LocationVerificationScreen(
                             text =
                                 when {
 
-                                    isVerifying ->
-                                        "Acquiring GPS location..."
+                                    isTestLocation ->
+                                        "Test location active"
 
-                                    locationVerified ->
-                                        "Location verified"
-
-                                    errorMessage != null ->
-                                        "GPS verification failed"
+                                    currentLatitude != null ->
+                                        "Current location captured"
 
                                     else ->
                                         "Current location"
@@ -695,27 +794,21 @@ fun LocationVerificationScreen(
                         )
 
 
-                        Spacer(
-                            modifier =
-                                Modifier.height(3.dp)
-                        )
-
-
                         Text(
                             text =
                                 when {
 
-                                    isVerifying ->
-                                        "Please keep the phone still"
+                                    isLoading ->
+                                        "Getting GPS location..."
 
-                                    locationVerified ->
-                                        "You are inside the permitted area"
+                                    isTestLocation ->
+                                        "Simulated at institute"
 
-                                    errorMessage != null ->
-                                        "Check the error below"
+                                    currentLatitude != null ->
+                                        "GPS location received"
 
                                     else ->
-                                        "Press Verify Location to begin"
+                                        "Tap VERIFY LOCATION below"
                                 },
 
                             fontSize =
@@ -729,13 +822,25 @@ fun LocationVerificationScreen(
             }
 
 
-            // =================================================================
-            // GPS DETAILS
-            // =================================================================
+            // ========================================================
+            // LOCATION DETAILS
+            // ========================================================
 
-            SectionTitle(
+            Text(
                 text =
-                    "GPS DETAILS"
+                    "LOCATION DETAILS",
+
+                fontSize =
+                    11.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color =
+                    Color(0xFF64748B),
+
+                letterSpacing =
+                    0.5.sp
             )
 
 
@@ -764,66 +869,41 @@ fun LocationVerificationScreen(
                         Modifier.padding(16.dp),
 
                     verticalArrangement =
-                        Arrangement.spacedBy(14.dp)
+                        Arrangement.spacedBy(15.dp)
                 ) {
 
-                    InfoRow(
+                    LocationRow(
+                        icon =
+                            Icons.Default.Navigation,
+
                         label =
                             "Distance from institute",
 
                         value =
-                            distanceFromInstitute?.let {
-                                formatDistance(it)
-                            } ?: "Not captured",
-
-                        valueColor =
-                            if (locationVerified)
-                                Color(0xFF16A34A)
-                            else
-                                Color(0xFF1E293B)
-                    )
-
-
-                    InfoRow(
-                        label =
-                            "GPS accuracy",
-
-                        value =
-                            gpsAccuracy?.let {
+                            distanceMeters?.let {
                                 "${it.toInt()} metres"
                             } ?: "Not captured"
                     )
 
 
-                    InfoRow(
+                    LocationRow(
+                        icon =
+                            Icons.Default.MyLocation,
+
                         label =
-                            "Latitude",
+                            "GPS accuracy",
 
                         value =
-                            currentLatitude?.let {
-                                String.format(
-                                    "%.6f",
-                                    it
-                                )
+                            accuracyMeters?.let {
+                                "± ${it.toInt()} metres"
                             } ?: "Not captured"
                     )
 
 
-                    InfoRow(
-                        label =
-                            "Longitude",
+                    LocationRow(
+                        icon =
+                            Icons.Default.LocationOn,
 
-                        value =
-                            currentLongitude?.let {
-                                String.format(
-                                    "%.6f",
-                                    it
-                                )
-                            } ?: "Not captured"
-                    )
-
-
-                    InfoRow(
                         label =
                             "Location status",
 
@@ -831,13 +911,13 @@ fun LocationVerificationScreen(
                             when {
 
                                 locationVerified ->
-                                    "VERIFIED"
+                                    "Verified"
 
-                                isVerifying ->
-                                    "VERIFYING"
+                                distanceMeters != null ->
+                                    "Outside permitted radius"
 
                                 else ->
-                                    "NOT VERIFIED"
+                                    "Not verified"
                             },
 
                         valueColor =
@@ -846,22 +926,47 @@ fun LocationVerificationScreen(
                                 locationVerified ->
                                     Color(0xFF16A34A)
 
-                                isVerifying ->
-                                    Color(0xFF2563A6)
+                                distanceMeters != null ->
+                                    Color(0xFFDC2626)
 
                                 else ->
                                     Color(0xFFD97706)
                             }
                     )
+
+
+                    if (
+                        currentLatitude != null &&
+                        currentLongitude != null
+                    ) {
+
+                        LocationRow(
+                            icon =
+                                Icons.Default.MyLocation,
+
+                            label =
+                                if (isTestLocation)
+                                    "Test coordinates"
+                                else
+                                    "Current coordinates",
+
+                            value =
+                                String.format(
+                                    "%.6f, %.6f",
+                                    currentLatitude,
+                                    currentLongitude
+                                )
+                        )
+                    }
                 }
             }
 
 
-            // =================================================================
+            // ========================================================
             // ERROR
-            // =================================================================
+            // ========================================================
 
-            if (errorMessage != null) {
+            errorMessage?.let { message ->
 
                 Card(
                     modifier =
@@ -873,13 +978,13 @@ fun LocationVerificationScreen(
                     colors =
                         CardDefaults.cardColors(
                             containerColor =
-                                Color(0xFFFFF7ED)
+                                Color(0xFFFEF2F2)
                         ),
 
                     border =
                         BorderStroke(
                             1.dp,
-                            Color(0xFFFED7AA)
+                            Color(0xFFFECACA)
                         )
                 ) {
 
@@ -893,16 +998,16 @@ fun LocationVerificationScreen(
 
                         Icon(
                             imageVector =
-                                Icons.Default.Error,
+                                Icons.Default.ErrorOutline,
 
                             contentDescription =
                                 null,
 
-                            modifier =
-                                Modifier.size(24.dp),
-
                             tint =
-                                Color(0xFFD97706)
+                                Color(0xFFDC2626),
+
+                            modifier =
+                                Modifier.size(24.dp)
                         )
 
 
@@ -912,51 +1017,24 @@ fun LocationVerificationScreen(
                         )
 
 
-                        Column {
+                        Text(
+                            text =
+                                message,
 
-                            Text(
-                                text =
-                                    "VERIFICATION FAILED",
+                            fontSize =
+                                12.sp,
 
-                                fontSize =
-                                    11.sp,
-
-                                fontWeight =
-                                    FontWeight.Bold,
-
-                                color =
-                                    Color(0xFF9A3412)
-                            )
-
-
-                            Spacer(
-                                modifier =
-                                    Modifier.height(3.dp)
-                            )
-
-
-                            Text(
-                                text =
-                                    errorMessage!!,
-
-                                fontSize =
-                                    12.sp,
-
-                                color =
-                                    Color(0xFF7C4A1D),
-
-                                lineHeight =
-                                    17.sp
-                            )
-                        }
+                            color =
+                                Color(0xFF991B1B)
+                        )
                     }
                 }
             }
 
 
-            // =================================================================
+            // ========================================================
             // SUCCESS
-            // =================================================================
+            // ========================================================
 
             if (locationVerified) {
 
@@ -996,7 +1074,7 @@ fun LocationVerificationScreen(
                                 null,
 
                             modifier =
-                                Modifier.size(25.dp),
+                                Modifier.size(24.dp),
 
                             tint =
                                 Color(0xFF16A34A)
@@ -1013,7 +1091,10 @@ fun LocationVerificationScreen(
 
                             Text(
                                 text =
-                                    "LOCATION VERIFIED",
+                                    if (isTestLocation)
+                                        "TEST LOCATION VERIFIED"
+                                    else
+                                        "LOCATION VERIFIED",
 
                                 fontSize =
                                     13.sp,
@@ -1034,8 +1115,10 @@ fun LocationVerificationScreen(
 
                             Text(
                                 text =
-                                    "Your device is within the permitted " +
-                                            "inspection radius.",
+                                    if (isTestLocation)
+                                        "Testing mode: simulated presence at the institute."
+                                    else
+                                        "You are within the permitted inspection radius.",
 
                                 fontSize =
                                     12.sp,
@@ -1049,134 +1132,26 @@ fun LocationVerificationScreen(
             }
 
 
-            // =================================================================
-            // BUTTONS
-            // =================================================================
+            Spacer(
+                modifier =
+                    Modifier.height(2.dp)
+            )
+
+
+            // ========================================================
+            // REAL GPS BUTTON
+            // ========================================================
 
             if (!locationVerified) {
 
                 Button(
-                    onClick = {
-
-                        // -----------------------------------------------------
-                        // CHECK WHETHER PRECISE LOCATION IS ALREADY GRANTED
-                        // -----------------------------------------------------
-
-                        val fineGranted =
-                            ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.ACCESS_FINE_LOCATION
-                            ) == PackageManager.PERMISSION_GRANTED
-
-
-                        if (fineGranted) {
-
-                            // Permission already granted.
-                            // Directly start GPS verification.
-
-                            startLocationVerification(
-                                context = context,
-
-                                targetLatitude =
-                                    currentInspection.latitude,
-
-                                targetLongitude =
-                                    currentInspection.longitude,
-
-                                allowedRadiusMeters =
-                                    currentInspection
-                                        .allowedRadiusMeters,
-
-                                onStarted = {
-
-                                    isVerifying = true
-                                    errorMessage = null
-                                    locationVerified = false
-                                },
-
-                                onLocationReceived = {
-                                        location,
-                                        distance ->
-
-                                    isVerifying = false
-
-                                    currentLatitude =
-                                        location.latitude
-
-                                    currentLongitude =
-                                        location.longitude
-
-                                    gpsAccuracy =
-                                        location.accuracy
-
-                                    distanceFromInstitute =
-                                        distance
-
-                                    val accurateEnough =
-                                        location.hasAccuracy() &&
-                                                location.accuracy <= 50f
-
-                                    val insideRadius =
-                                        distance <=
-                                                currentInspection
-                                                    .allowedRadiusMeters
-
-                                    when {
-
-                                        !accurateEnough -> {
-
-                                            locationVerified = false
-
-                                            errorMessage =
-                                                "GPS accuracy is too low. " +
-                                                        "Move to an open area " +
-                                                        "and try again."
-                                        }
-
-                                        !insideRadius -> {
-
-                                            locationVerified = false
-
-                                            errorMessage =
-                                                "You are ${formatDistance(distance)} " +
-                                                        "away from the institute. " +
-                                                        "The permitted radius is " +
-                                                        "${currentInspection.allowedRadiusMeters.toInt()} metres."
-                                        }
-
-                                        else -> {
-
-                                            locationVerified = true
-                                            errorMessage = null
-                                        }
-                                    }
-                                },
-
-                                onError = { message ->
-
-                                    isVerifying = false
-                                    locationVerified = false
-                                    errorMessage = message
-                                }
-                            )
-
-                        } else {
-
-                            // -------------------------------------------------
-                            // REQUEST REAL ANDROID LOCATION PERMISSION
-                            // -------------------------------------------------
-
-                            locationPermissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
-                            )
-                        }
-                    },
+                    onClick =
+                        {
+                            startVerification()
+                        },
 
                     enabled =
-                        !isVerifying,
+                        !isLoading,
 
                     modifier =
                         Modifier
@@ -1193,16 +1168,32 @@ fun LocationVerificationScreen(
                         )
                 ) {
 
-                    Icon(
-                        imageVector =
-                            Icons.Default.MyLocation,
+                    if (isLoading) {
 
-                        contentDescription =
-                            null,
+                        CircularProgressIndicator(
+                            modifier =
+                                Modifier.size(20.dp),
 
-                        modifier =
-                            Modifier.size(19.dp)
-                    )
+                            color =
+                                Color.White,
+
+                            strokeWidth =
+                                2.dp
+                        )
+
+                    } else {
+
+                        Icon(
+                            imageVector =
+                                Icons.Default.MyLocation,
+
+                            contentDescription =
+                                null,
+
+                            modifier =
+                                Modifier.size(19.dp)
+                        )
+                    }
 
 
                     Spacer(
@@ -1213,7 +1204,7 @@ fun LocationVerificationScreen(
 
                     Text(
                         text =
-                            if (isVerifying)
+                            if (isLoading)
                                 "VERIFYING LOCATION..."
                             else
                                 "VERIFY LOCATION",
@@ -1225,12 +1216,93 @@ fun LocationVerificationScreen(
                             FontWeight.Bold
                     )
                 }
+            }
 
-            } else {
 
-                // =============================================================
-                // CONTINUE
-                // =============================================================
+            // ========================================================
+            // TEST MODE BUTTON
+            // ========================================================
+
+            if (!locationVerified) {
+
+                Button(
+                    onClick =
+                        {
+                            useTestLocation()
+                        },
+
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+
+                    shape =
+                        RoundedCornerShape(12.dp),
+
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor =
+                                Color(0xFFE2E8F0),
+                            contentColor =
+                                Color(0xFF334155)
+                        )
+                ) {
+
+                    Icon(
+                        imageVector =
+                            Icons.Default.Navigation,
+
+                        contentDescription =
+                            null,
+
+                        modifier =
+                            Modifier.size(18.dp)
+                    )
+
+
+                    Spacer(
+                        modifier =
+                            Modifier.size(8.dp)
+                    )
+
+
+                    Text(
+                        text =
+                            "USE TEST LOCATION",
+
+                        fontSize =
+                            13.sp,
+
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                }
+
+
+                Text(
+                    text =
+                        "Development testing only",
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    fontSize =
+                        10.sp,
+
+                    color =
+                        Color(0xFF94A3B8),
+
+                    textAlign =
+                        androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+
+
+            // ========================================================
+            // CONTINUE
+            // ========================================================
+
+            if (locationVerified) {
 
                 Button(
                     onClick =
@@ -1262,68 +1334,6 @@ fun LocationVerificationScreen(
                             FontWeight.Bold
                     )
                 }
-
-
-                // =============================================================
-                // VERIFY AGAIN
-                // =============================================================
-
-                Button(
-                    onClick = {
-
-                        locationVerified = false
-                        errorMessage = null
-                        currentLatitude = null
-                        currentLongitude = null
-                        gpsAccuracy = null
-                        distanceFromInstitute = null
-                    },
-
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    shape =
-                        RoundedCornerShape(12.dp),
-
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor =
-                                Color.Transparent,
-
-                            contentColor =
-                                Color(0xFF174A7E)
-                        )
-                ) {
-
-                    Icon(
-                        imageVector =
-                            Icons.Default.Refresh,
-
-                        contentDescription =
-                            null,
-
-                        modifier =
-                            Modifier.size(18.dp)
-                    )
-
-
-                    Spacer(
-                        modifier =
-                            Modifier.size(7.dp)
-                    )
-
-
-                    Text(
-                        text =
-                            "VERIFY AGAIN",
-
-                        fontSize =
-                            13.sp,
-
-                        fontWeight =
-                            FontWeight.SemiBold
-                    )
-                }
             }
 
 
@@ -1336,235 +1346,17 @@ fun LocationVerificationScreen(
 }
 
 
-// ============================================================================
-// START GPS VERIFICATION
-// ============================================================================
-
-private fun startLocationVerification(
-    context: Context,
-
-    targetLatitude: Double,
-
-    targetLongitude: Double,
-
-    allowedRadiusMeters: Float,
-
-    onStarted: () -> Unit,
-
-    onLocationReceived: (
-        location: Location,
-        distanceMeters: Float
-    ) -> Unit,
-
-    onError: (String) -> Unit
-) {
-
-    // ========================================================================
-    // PERMISSION CHECK
-    // ========================================================================
-
-    val fineGranted =
-        ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-
-
-    if (!fineGranted) {
-
-        onError(
-            "Precise location permission is required."
-        )
-
-        return
-    }
-
-
-    // ========================================================================
-    // LOCATION SERVICES CHECK
-    // ========================================================================
-
-    val locationManager =
-        context.getSystemService(
-            Context.LOCATION_SERVICE
-        ) as LocationManager
-
-    val locationEnabled =
-        androidx.core.location.LocationManagerCompat
-            .isLocationEnabled(locationManager)
-
-    if (!locationEnabled) {
-
-        onError(
-            "Location services are turned off. " +
-                    "Please turn on GPS/Location on your phone."
-        )
-
-        return
-    }
-
-    // ========================================================================
-    // START
-    // ========================================================================
-
-    onStarted()
-
-
-    // ========================================================================
-    // FUSED LOCATION PROVIDER
-    // ========================================================================
-
-    val fusedLocationClient =
-        LocationServices
-            .getFusedLocationProviderClient(context)
-
-
-    // ========================================================================
-    // HIGH ACCURACY REQUEST
-    // ========================================================================
-
-    val request =
-        CurrentLocationRequest.Builder()
-            .setPriority(
-                Priority.PRIORITY_HIGH_ACCURACY
-            )
-            .setMaxUpdateAgeMillis(
-                5_000
-            )
-            .setDurationMillis(
-                15_000
-            )
-            .build()
-
-
-    // ========================================================================
-    // REQUEST CURRENT LOCATION
-    // ========================================================================
-
-    try {
-
-        val cancellationTokenSource =
-            CancellationTokenSource()
-
-
-        fusedLocationClient
-            .getCurrentLocation(
-                request,
-                cancellationTokenSource.token
-            )
-
-            .addOnSuccessListener { location ->
-
-                if (location == null) {
-
-                    onError(
-                        "Unable to obtain your current GPS location. " +
-                                "Move to an open area and try again."
-                    )
-
-                    return@addOnSuccessListener
-                }
-
-
-                // ============================================================
-                // CALCULATE DISTANCE
-                // ============================================================
-
-                val distanceResult =
-                    FloatArray(1)
-
-
-                Location.distanceBetween(
-                    location.latitude,
-                    location.longitude,
-
-                    targetLatitude,
-                    targetLongitude,
-
-                    distanceResult
-                )
-
-
-                val distance =
-                    distanceResult[0]
-
-
-                // ============================================================
-                // RETURN RESULT
-                // ============================================================
-
-                onLocationReceived(
-                    location,
-                    distance
-                )
-            }
-
-            .addOnFailureListener { exception ->
-
-                onError(
-                    exception.message
-                        ?: "Unable to obtain current GPS location."
-                )
-            }
-
-    } catch (
-        exception: SecurityException
-    ) {
-
-        onError(
-            "Location permission was not granted. " +
-                    "Please allow precise location access."
-        )
-
-    } catch (
-        exception: Exception
-    ) {
-
-        onError(
-            exception.message
-                ?: "Unable to access device GPS."
-        )
-    }
-}
-
-
-// ============================================================================
-// SECTION TITLE
-// ============================================================================
+// ================================================================
+// LOCATION ROW
+// ================================================================
 
 @Composable
-private fun SectionTitle(
-    text: String
-) {
-
-    Text(
-        text =
-            text,
-
-        fontSize =
-            11.sp,
-
-        fontWeight =
-            FontWeight.Bold,
-
-        color =
-            Color(0xFF64748B),
-
-        letterSpacing =
-            0.5.sp
-    )
-}
-
-
-// ============================================================================
-// INFO ROW
-// ============================================================================
-
-@Composable
-private fun InfoRow(
+private fun LocationRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     value: String,
-    valueColor: Color = Color(0xFF1E293B)
+    valueColor: Color =
+        Color(0xFF1E293B)
 ) {
 
     Row(
@@ -1575,55 +1367,63 @@ private fun InfoRow(
             Alignment.CenterVertically
     ) {
 
-        Text(
-            text =
-                label,
+        Icon(
+            imageVector =
+                icon,
 
-            fontSize =
-                11.sp,
-
-            color =
-                Color(0xFF64748B),
+            contentDescription =
+                null,
 
             modifier =
+                Modifier.size(20.dp),
+
+            tint =
+                Color(0xFF2563A6)
+        )
+
+
+        Spacer(
+            modifier =
+                Modifier.size(12.dp)
+        )
+
+
+        Column(
+            modifier =
                 Modifier.weight(1f)
-        )
+        ) {
+
+            Text(
+                text =
+                    label,
+
+                fontSize =
+                    11.sp,
+
+                color =
+                    Color(0xFF64748B)
+            )
 
 
-        Text(
-            text =
-                value,
-
-            fontSize =
-                12.sp,
-
-            fontWeight =
-                FontWeight.SemiBold,
-
-            color =
-                valueColor
-        )
-    }
-}
+            Spacer(
+                modifier =
+                    Modifier.height(2.dp)
+            )
 
 
-// ============================================================================
-// DISTANCE FORMATTER
-// ============================================================================
+            Text(
+                text =
+                    value,
 
-private fun formatDistance(
-    distanceMeters: Float
-): String {
+                fontSize =
+                    14.sp,
 
-    return if (distanceMeters < 1000f) {
+                fontWeight =
+                    FontWeight.SemiBold,
 
-        "${distanceMeters.toInt()} metres"
-
-    } else {
-
-        String.format(
-            "%.2f km",
-            distanceMeters / 1000f
-        )
+                color =
+                    valueColor
+            )
+        }
     }
 }

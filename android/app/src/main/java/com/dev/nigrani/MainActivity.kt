@@ -10,6 +10,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
+import com.dev.nigrani.ui.screens.LoginScreen
+
 import com.dev.nigrani.ui.screens.alerts.AlertsScreen
 import com.dev.nigrani.ui.screens.dashboard.DashboardScreen
 import com.dev.nigrani.ui.screens.institutes.InstitutesScreen
@@ -18,10 +20,10 @@ import com.dev.nigrani.ui.screens.institutedetails.InstituteDetailsScreen
 import com.dev.nigrani.ui.screens.inspections.EvidenceCaptureScreen
 import com.dev.nigrani.ui.screens.inspections.InspectionAssignmentScreen
 import com.dev.nigrani.ui.screens.inspections.InspectionChecklistScreen
+import com.dev.nigrani.ui.screens.inspections.InspectionItem
 import com.dev.nigrani.ui.screens.inspections.InspectionReportScreen
 import com.dev.nigrani.ui.screens.inspections.InspectionSubmittedScreen
 import com.dev.nigrani.ui.screens.inspections.InspectionsScreen
-import com.dev.nigrani.ui.screens.inspections.InspectionItem
 import com.dev.nigrani.ui.screens.inspections.LocationVerificationScreen
 
 import com.dev.nigrani.ui.screens.reports.ReportDetailsScreen
@@ -33,7 +35,9 @@ import com.dev.nigrani.ui.theme.NigraniTheme
 
 
 enum class AppScreen {
+    LOGIN,
     DASHBOARD,
+
     INSTITUTES,
     INSTITUTE_DETAILS,
 
@@ -72,7 +76,7 @@ class MainActivity : ComponentActivity() {
                 // ============================================================
 
                 var currentScreen by remember {
-                    mutableStateOf(AppScreen.DASHBOARD)
+                    mutableStateOf(AppScreen.LOGIN)
                 }
 
 
@@ -92,6 +96,12 @@ class MainActivity : ComponentActivity() {
                 var selectedInspection by remember {
                     mutableStateOf<InspectionItem?>(null)
                 }
+
+
+                // ============================================================
+                // ACTIVE INSPECTION SESSION
+                // ============================================================
+
                 var inspectionSession by remember {
                     mutableStateOf<InspectionSession?>(null)
                 }
@@ -125,6 +135,9 @@ class MainActivity : ComponentActivity() {
                 ) {
 
                     currentScreen = when (currentScreen) {
+
+                        AppScreen.LOGIN ->
+                            AppScreen.LOGIN
 
                         AppScreen.DASHBOARD ->
                             AppScreen.DASHBOARD
@@ -177,6 +190,23 @@ class MainActivity : ComponentActivity() {
 
                 when (currentScreen) {
 
+
+                    // ========================================================
+                    // LOGIN
+                    // ========================================================
+
+                    AppScreen.LOGIN -> {
+
+                        LoginScreen(
+                            onLoginClick = {
+
+                                currentScreen =
+                                    AppScreen.DASHBOARD
+                            }
+                        )
+                    }
+
+
                     // ========================================================
                     // DASHBOARD
                     // ========================================================
@@ -192,7 +222,6 @@ class MainActivity : ComponentActivity() {
                             },
 
 
-                            // Dashboard → Inspections Home
                             onInspectionClick = {
 
                                 currentScreen =
@@ -215,9 +244,15 @@ class MainActivity : ComponentActivity() {
                                 currentScreen =
                                     AppScreen.REPORTS
                             },
+
+
                             onSurveillanceClick = {
-                                surveillanceReturnScreen = AppScreen.DASHBOARD
-                                currentScreen = AppScreen.SURVEILLANCE
+
+                                surveillanceReturnScreen =
+                                    AppScreen.DASHBOARD
+
+                                currentScreen =
+                                    AppScreen.SURVEILLANCE
                             }
                         )
                     }
@@ -245,7 +280,6 @@ class MainActivity : ComponentActivity() {
                             },
 
 
-                            // Institutes → Inspections Home
                             onInspectionClick = {
 
                                 inspectionReturnScreen =
@@ -294,30 +328,61 @@ class MainActivity : ComponentActivity() {
 
 
                             onInspectionClick = {
-                                val instituteInspection = InspectionItem(
-                                    id = "INS-2026-0905-014",
-                                    institute = "Sunrise Rehabilitation Centre",
-                                    location = "Varanasi, Uttar Pradesh",
-                                    type = "Surprise Inspection",
-                                    inspector = "Rajesh Kumar",
-                                    date = "05 Sep 2026 • 18:00",
-                                    priority = "Critical",
-                                    status = "Assigned",
-                                    reason = "Attendance anomaly detected",
 
-                                    latitude = 25.3176,
-                                    longitude = 82.9739,
-                                    allowedRadiusMeters = 100f
-                                )
+                                val instituteInspection =
+                                    InspectionItem(
 
-                                selectedInspection = instituteInspection
+                                        id = "INS-2026-0905-014",
 
-                                inspectionSession = InspectionSession(
-                                    inspection = instituteInspection
-                                )
+                                        institute =
+                                            "Sunrise Rehabilitation Centre",
+
+                                        location =
+                                            "Varanasi, Uttar Pradesh",
+
+                                        type =
+                                            "Surprise Inspection",
+
+                                        inspector =
+                                            "Rajesh Kumar",
+
+                                        date =
+                                            "05 Sep 2026 • 18:00",
+
+                                        priority =
+                                            "Critical",
+
+                                        status =
+                                            "Assigned",
+
+                                        reason =
+                                            "Attendance anomaly detected",
+
+                                        latitude =
+                                            25.3176,
+
+                                        longitude =
+                                            82.9739,
+
+                                        allowedRadiusMeters =
+                                            100f
+                                    )
+
+
+                                selectedInspection =
+                                    instituteInspection
+
+
+                                inspectionSession =
+                                    InspectionSession(
+                                        inspection =
+                                            instituteInspection
+                                    )
+
 
                                 inspectionReturnScreen =
                                     AppScreen.INSTITUTE_DETAILS
+
 
                                 currentScreen =
                                     AppScreen.INSPECTION_ASSIGNMENT
@@ -355,12 +420,18 @@ class MainActivity : ComponentActivity() {
 
                                 selectedInspection =
                                     inspection
-                                inspectionSession = InspectionSession(
-                                    inspection = inspection
-                                )
+
+
+                                inspectionSession =
+                                    InspectionSession(
+                                        inspection =
+                                            inspection
+                                    )
+
 
                                 inspectionReturnScreen =
                                     AppScreen.INSPECTIONS
+
 
                                 currentScreen =
                                     AppScreen.INSPECTION_ASSIGNMENT
@@ -376,7 +447,11 @@ class MainActivity : ComponentActivity() {
                     AppScreen.INSPECTION_ASSIGNMENT -> {
 
                         InspectionAssignmentScreen(
-                            inspection = inspectionSession?.inspection,
+
+                            inspection =
+                                inspectionSession?.inspection,
+
+
                             onBackClick = {
 
                                 currentScreen =
@@ -400,7 +475,11 @@ class MainActivity : ComponentActivity() {
                     AppScreen.LOCATION_VERIFICATION -> {
 
                         LocationVerificationScreen(
-                            inspection = inspectionSession?.inspection,
+
+                            inspection =
+                                inspectionSession?.inspection,
+
+
                             onBackClick = {
 
                                 currentScreen =
@@ -448,14 +527,21 @@ class MainActivity : ComponentActivity() {
                     AppScreen.EVIDENCE_CAPTURE -> {
 
                         EvidenceCaptureScreen(
+
                             onBackClick = {
-                                currentScreen = AppScreen.INSPECTION_CHECKLIST
+
+                                currentScreen =
+                                    AppScreen.INSPECTION_CHECKLIST
                             },
+
+
                             onSubmitClick = { evidenceUri ->
 
-                                // For now we receive the real URI here.
-                                // Later this URI/file will be uploaded to the backend.
-                                currentScreen = AppScreen.INSPECTION_REPORT
+                                // Real camera URI received here.
+                                // Backend upload will be connected later.
+
+                                currentScreen =
+                                    AppScreen.INSPECTION_REPORT
                             }
                         )
                     }
@@ -494,6 +580,10 @@ class MainActivity : ComponentActivity() {
                         InspectionSubmittedScreen(
 
                             onDoneClick = {
+
+                                // Clear current inspection session
+                                inspectionSession = null
+                                selectedInspection = null
 
                                 currentScreen =
                                     AppScreen.DASHBOARD
@@ -552,6 +642,7 @@ class MainActivity : ComponentActivity() {
 
 
                             onAlertClick = {
+
                                 // Alert Details will be connected later.
                             },
 
@@ -612,7 +703,9 @@ class MainActivity : ComponentActivity() {
 
                             ReportDetailsScreen(
 
-                                report = report,
+                                report =
+                                    report,
+
 
                                 onBackClick = {
 
