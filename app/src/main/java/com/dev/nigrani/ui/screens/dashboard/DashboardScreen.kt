@@ -2,29 +2,32 @@ package com.dev.nigrani.ui.screens.dashboard
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apartment
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.outlined.Assignment
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Home
@@ -35,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,52 +53,63 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 
-private val Navy = Color(0xFF123B63)
-private val Blue = Color(0xFF21639D)
+
+
+// ============================================================================
+// COLORS
+// ============================================================================
+
+private val Navy = Color(0xFF174A7E)
+private val Blue = Color(0xFF2563A6)
 private val Green = Color(0xFF159A72)
 private val Red = Color(0xFFD23838)
-private val Amber = Color(0xFFE1A62A)
+private val Amber = Color(0xFFD99520)
 
-private val Background = Color(0xFFF6F8FB)
-private val Surface = Color.White
+private val Background = Color(0xFFF7F9FC)
+private val SurfaceColor = Color.White
+
 private val SoftBlue = Color(0xFFEAF3FA)
+private val SoftGreen = Color(0xFFEAF8F3)
 private val SoftRed = Color(0xFFFFEEEE)
-private val TextGray = Color(0xFF7C8794)
-private val Border = Color(0xFFE2E7ED)
+private val SoftAmber = Color(0xFFFFF6E6)
 
+private val TextGray = Color(0xFF687687)
+private val Border = Color(0xFFE1E7EE)
+
+
+// ============================================================================
+// DASHBOARD SCREEN
+// ============================================================================
 
 @Composable
 fun DashboardScreen(
     onInstitutesClick: () -> Unit = {},
     onInspectionClick: () -> Unit = {},
     onAlertsClick: () -> Unit = {},
-    onReportsClick: () -> Unit = {}
+    onReportsClick: () -> Unit = {},
+    onSurveillanceClick: () -> Unit = {}
 ) {
 
     var selectedItem by remember {
         mutableIntStateOf(0)
     }
 
+    val scrollState = rememberScrollState()
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Background,
-        contentWindowInsets = WindowInsets.statusBars,
 
         bottomBar = {
 
             NavigationBar(
                 modifier = Modifier.navigationBarsPadding(),
-                containerColor = Surface,
-                tonalElevation = 0.dp
+                containerColor = SurfaceColor,
+                tonalElevation = 2.dp
             ) {
 
-                // ============================================================
                 // DASHBOARD
-                // ============================================================
 
                 NavigationBarItem(
                     selected = selectedItem == 0,
@@ -105,7 +120,7 @@ fun DashboardScreen(
 
                     icon = {
                         Icon(
-                            Icons.Outlined.Home,
+                            imageVector = Icons.Outlined.Home,
                             contentDescription = "Dashboard"
                         )
                     },
@@ -116,9 +131,7 @@ fun DashboardScreen(
                 )
 
 
-                // ============================================================
                 // INSTITUTES
-                // ============================================================
 
                 NavigationBarItem(
                     selected = selectedItem == 1,
@@ -130,7 +143,7 @@ fun DashboardScreen(
 
                     icon = {
                         Icon(
-                            Icons.Outlined.Business,
+                            imageVector = Icons.Outlined.Business,
                             contentDescription = "Institutes"
                         )
                     },
@@ -141,9 +154,7 @@ fun DashboardScreen(
                 )
 
 
-                // ============================================================
                 // INSPECTIONS
-                // ============================================================
 
                 NavigationBarItem(
                     selected = selectedItem == 2,
@@ -155,7 +166,7 @@ fun DashboardScreen(
 
                     icon = {
                         Icon(
-                            Icons.Outlined.Assignment,
+                            imageVector = Icons.Default.Assignment,
                             contentDescription = "Inspections"
                         )
                     },
@@ -166,9 +177,7 @@ fun DashboardScreen(
                 )
 
 
-                // ============================================================
                 // ALERTS
-                // ============================================================
 
                 NavigationBarItem(
                     selected = selectedItem == 3,
@@ -180,7 +189,7 @@ fun DashboardScreen(
 
                     icon = {
                         Icon(
-                            Icons.Outlined.Notifications,
+                            imageVector = Icons.Outlined.Notifications,
                             contentDescription = "Alerts"
                         )
                     },
@@ -191,9 +200,7 @@ fun DashboardScreen(
                 )
 
 
-                // ============================================================
                 // REPORTS
-                // ============================================================
 
                 NavigationBarItem(
                     selected = selectedItem == 4,
@@ -205,7 +212,7 @@ fun DashboardScreen(
 
                     icon = {
                         Icon(
-                            Icons.Outlined.Description,
+                            imageVector = Icons.Outlined.Description,
                             contentDescription = "Reports"
                         )
                     },
@@ -223,54 +230,134 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .windowInsetsPadding(WindowInsets.statusBars)
+                .statusBarsPadding()
+                .verticalScroll(scrollState)
                 .padding(
-                    start = 18.dp,
-                    end = 18.dp,
-                    top = 10.dp,
-                    bottom = 10.dp
-                )
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 8.dp,
+                    bottom = 24.dp
+                ),
+
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            DashboardHeader()
+            DashboardHeader(
+                onNotificationClick = onAlertsClick
+            )
 
-            Spacer(modifier = Modifier.height(13.dp))
+            SystemStatus()
 
-            DashboardStats()
+            SectionTitle(
+                title = "Monitoring Overview"
+            )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            StatisticsSection(
+                onInstitutesClick = onInstitutesClick,
+                onInspectionClick = onInspectionClick,
+                onAlertsClick = onAlertsClick,
+                onSurveillanceClick = onSurveillanceClick
+            )
 
-            AttentionSection()
+            SectionTitle(
+                title = "Attention Required",
+                action = "View all",
+                onActionClick = onAlertsClick
+            )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            AttentionCard(
+                onClick = onAlertsClick
+            )
 
-            LiveMonitoringSection()
+            SectionTitle(
+                title = "Live Monitoring",
+                action = "View institutes",
+                onActionClick = onInstitutesClick
+            )
+
+            LiveMonitoringCard(
+                onClick = onSurveillanceClick
+            )
+
+            SectionTitle(
+                title = "Attendance Monitoring"
+            )
+
+            AttendanceCard(
+                onClick = onAlertsClick
+            )
+
+            SectionTitle(
+                title = "CCTV Monitoring"
+            )
+
+            CctvCard(
+                onClick = onSurveillanceClick
+            )
+
+            SectionTitle(
+                title = "Inspection Status",
+                action = "View inspections",
+                onActionClick = onInspectionClick
+            )
+
+            InspectionCard(
+                onClick = onInspectionClick
+            )
+
+            Text(
+                text = "Nigrani • Monitoring Command Center",
+
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
+
+                fontSize = 10.sp,
+                color = Color(0xFF9AA5B1)
+            )
         }
     }
 }
 
 
 // ============================================================================
-// DASHBOARD HEADER
+// HEADER
 // ============================================================================
 
 @Composable
-private fun DashboardHeader() {
+private fun DashboardHeader(
+    onNotificationClick: () -> Unit
+) {
 
-    val hour = LocalTime.now().hour
+    val calendar = java.util.Calendar.getInstance()
+
+    val hour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
 
     val greeting = when {
-        hour < 12 -> "Good morning"
-        hour < 17 -> "Good afternoon"
-        else -> "Good evening"
+
+        hour < 12 ->
+            "Good morning"
+
+        hour < 17 ->
+            "Good afternoon"
+
+        else ->
+            "Good evening"
     }
 
-    val date = LocalDate.now().format(
-        DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy")
-    )
+    val dateFormat =
+        java.text.SimpleDateFormat(
+            "EEEE, d MMMM yyyy",
+            java.util.Locale.getDefault()
+        )
 
+    val date =
+        dateFormat.format(
+            calendar.time
+        )
     Row(
         modifier = Modifier.fillMaxWidth(),
+
         verticalAlignment = Alignment.CenterVertically
     ) {
 
@@ -280,52 +367,72 @@ private fun DashboardHeader() {
 
             Text(
                 text = "$greeting, Officer",
-                fontSize = 23.sp,
+
+                fontSize = 22.sp,
+
                 fontWeight = FontWeight.Bold,
+
                 color = Navy
             )
 
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(
+                modifier = Modifier.height(3.dp)
+            )
 
             Text(
                 text = "Monitoring Command Center",
-                fontSize = 15.sp,
+
+                fontSize = 13.sp,
+
                 color = TextGray
             )
 
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(
+                modifier = Modifier.height(3.dp)
+            )
 
             Text(
                 text = date,
-                fontSize = 12.sp,
-                color = Color(0xFF9AA3AE)
+
+                fontSize = 11.sp,
+
+                color = Color(0xFF96A1AE)
             )
         }
 
+
+        // WORKING NOTIFICATION BUTTON
+
         Box(
             modifier = Modifier
-                .size(43.dp)
+                .size(46.dp)
                 .clip(
-                    androidx.compose.foundation.shape.RoundedCornerShape(13.dp)
+                    RoundedCornerShape(13.dp)
                 )
-                .background(Surface),
+                .background(SurfaceColor)
+                .clickable {
+                    onNotificationClick()
+                },
+
             contentAlignment = Alignment.Center
         ) {
 
             Icon(
                 imageVector = Icons.Outlined.Notifications,
+
                 contentDescription = "Notifications",
+
                 tint = Navy,
+
                 modifier = Modifier.size(22.dp)
             )
 
+            // notification dot
+
             Box(
                 modifier = Modifier
-                    .padding(5.dp)
-                    .size(7.dp)
-                    .clip(
-                        androidx.compose.foundation.shape.CircleShape
-                    )
+                    .size(9.dp)
+                    .clip(CircleShape)
                     .background(Red)
                     .align(Alignment.TopEnd)
             )
@@ -335,11 +442,131 @@ private fun DashboardHeader() {
 
 
 // ============================================================================
-// DASHBOARD STATS
+// SYSTEM STATUS
 // ============================================================================
 
 @Composable
-private fun DashboardStats() {
+private fun SystemStatus() {
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+
+        shape = RoundedCornerShape(11.dp),
+
+        color = SoftGreen,
+
+        border = BorderStroke(
+            1.dp,
+            Color(0xFFCDEBDD)
+        )
+    ) {
+
+        Row(
+            modifier = Modifier.padding(
+                horizontal = 12.dp,
+                vertical = 9.dp
+            ),
+
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(Green)
+            )
+
+            Spacer(
+                modifier = Modifier.width(8.dp)
+            )
+
+            Text(
+                text = "Monitoring systems operational",
+
+                modifier = Modifier.weight(1f),
+
+                fontSize = 11.sp,
+
+                fontWeight = FontWeight.SemiBold,
+
+                color = Color(0xFF176B50)
+            )
+
+            Text(
+                text = "LIVE",
+
+                fontSize = 9.sp,
+
+                fontWeight = FontWeight.Bold,
+
+                color = Green
+            )
+        }
+    }
+}
+
+
+// ============================================================================
+// SECTION TITLE
+// ============================================================================
+
+@Composable
+private fun SectionTitle(
+    title: String,
+    action: String? = null,
+    onActionClick: (() -> Unit)? = null
+) {
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Text(
+            text = title,
+
+            modifier = Modifier.weight(1f),
+
+            fontSize = 16.sp,
+
+            fontWeight = FontWeight.Bold,
+
+            color = Navy
+        )
+
+        if (action != null) {
+
+            Text(
+                text = action,
+
+                modifier = Modifier.clickable {
+                    onActionClick?.invoke()
+                },
+
+                fontSize = 11.sp,
+
+                fontWeight = FontWeight.SemiBold,
+
+                color = Blue
+            )
+        }
+    }
+}
+
+
+// ============================================================================
+// STATISTICS
+// ============================================================================
+
+@Composable
+private fun StatisticsSection(
+    onInstitutesClick: () -> Unit,
+    onInspectionClick: () -> Unit,
+    onAlertsClick: () -> Unit,
+    onSurveillanceClick: () -> Unit
+) {
 
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -347,45 +574,81 @@ private fun DashboardStats() {
 
         Row(
             modifier = Modifier.fillMaxWidth(),
+
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
 
             StatCard(
                 modifier = Modifier.weight(1f),
+
                 icon = Icons.Default.Apartment,
+
                 iconTint = Blue,
+
+                iconBackground = SoftBlue,
+
                 value = "128",
-                label = "Active Projects"
+
+                label = "Active Projects",
+
+                onClick = onInstitutesClick
             )
 
             StatCard(
                 modifier = Modifier.weight(1f),
+
                 icon = Icons.Default.Videocam,
+
                 iconTint = Green,
+
+                iconBackground = SoftGreen,
+
                 value = "113",
-                label = "CCTV Online"
+
+                label = "CCTV Online",
+                onClick = onSurveillanceClick
+
+
             )
         }
 
+
         Row(
             modifier = Modifier.fillMaxWidth(),
+
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
 
             StatCard(
                 modifier = Modifier.weight(1f),
+
                 icon = Icons.Default.Assignment,
+
                 iconTint = Amber,
+
+                iconBackground = SoftAmber,
+
                 value = "17",
-                label = "Inspections Pending"
+
+                label = "Inspections Pending",
+
+                onClick = onInspectionClick
             )
 
             StatCard(
                 modifier = Modifier.weight(1f),
+
                 icon = Icons.Default.Error,
+
                 iconTint = Red,
+
+                iconBackground = SoftRed,
+
                 value = "08",
-                label = "Critical Alerts"
+
+                label = "Critical Alerts",
+
+                onClick = onAlertsClick
             )
         }
     }
@@ -401,17 +664,23 @@ private fun StatCard(
     modifier: Modifier,
     icon: ImageVector,
     iconTint: Color,
+    iconBackground: Color,
     value: String,
-    label: String
+    label: String,
+    onClick: () -> Unit
 ) {
 
     Card(
-        modifier = modifier.height(105.dp),
+        modifier = modifier
+            .height(96.dp)
+            .clickable {
+                onClick()
+            },
 
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
 
         colors = CardDefaults.cardColors(
-            containerColor = Surface
+            containerColor = SurfaceColor
         ),
 
         border = BorderStroke(
@@ -427,45 +696,58 @@ private fun StatCard(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(11.dp),
 
             verticalAlignment = Alignment.CenterVertically
         ) {
 
             Box(
                 modifier = Modifier
-                    .size(42.dp)
+                    .size(40.dp)
                     .clip(
-                        androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                        RoundedCornerShape(11.dp)
                     )
-                    .background(SoftBlue),
+                    .background(iconBackground),
 
                 contentAlignment = Alignment.Center
             ) {
 
                 Icon(
                     imageVector = icon,
+
                     contentDescription = null,
+
                     tint = iconTint,
-                    modifier = Modifier.size(23.dp)
+
+                    modifier = Modifier.size(21.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(11.dp))
+            Spacer(
+                modifier = Modifier.width(10.dp)
+            )
 
-            Column {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
 
                 Text(
                     text = value,
-                    fontSize = 25.sp,
+
+                    fontSize = 23.sp,
+
                     fontWeight = FontWeight.Bold,
+
                     color = Navy
                 )
 
                 Text(
                     text = label,
-                    fontSize = 11.sp,
+
+                    fontSize = 10.sp,
+
                     color = TextGray,
+
                     maxLines = 2
                 )
             }
@@ -475,65 +757,30 @@ private fun StatCard(
 
 
 // ============================================================================
-// ATTENTION SECTION
-// ============================================================================
-
-@Composable
-private fun AttentionSection() {
-
-    Column {
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Text(
-                text = "Attention Required",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Navy,
-                modifier = Modifier.weight(1f)
-            )
-
-            Text(
-                text = "View all",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Blue
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        AttentionCard()
-    }
-}
-
-
-// ============================================================================
 // ATTENTION CARD
 // ============================================================================
 
 @Composable
-private fun AttentionCard() {
+private fun AttentionCard(
+    onClick: () -> Unit
+) {
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onClick()
+            },
 
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(17.dp),
+        shape = RoundedCornerShape(15.dp),
 
         colors = CardDefaults.cardColors(
-            containerColor = Surface
+            containerColor = SurfaceColor
         ),
 
         border = BorderStroke(
             1.dp,
             Border
-        ),
-
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp
         )
     ) {
 
@@ -547,9 +794,9 @@ private fun AttentionCard() {
 
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(42.dp)
                         .clip(
-                            androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                            RoundedCornerShape(11.dp)
                         )
                         .background(SoftRed),
 
@@ -557,75 +804,103 @@ private fun AttentionCard() {
                 ) {
 
                     Icon(
-                        imageVector = Icons.Default.Error,
+                        imageVector = Icons.Default.Warning,
+
                         contentDescription = null,
+
                         tint = Red,
-                        modifier = Modifier.size(24.dp)
+
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(11.dp))
+                Spacer(
+                    modifier = Modifier.width(10.dp)
+                )
 
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        shape = RoundedCornerShape(5.dp),
+
+                        color = Red
                     ) {
 
-                        Box(
-                            modifier = Modifier
-                                .clip(
-                                    androidx.compose.foundation.shape.RoundedCornerShape(5.dp)
-                                )
-                                .background(Red)
-                                .padding(
-                                    horizontal = 8.dp,
-                                    vertical = 4.dp
-                                )
-                        ) {
+                        Text(
+                            text = "CRITICAL",
 
-                            Text(
-                                text = "CRITICAL",
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
+                            modifier = Modifier.padding(
+                                horizontal = 7.dp,
+                                vertical = 3.dp
+                            ),
+
+                            fontSize = 8.sp,
+
+                            fontWeight = FontWeight.Bold,
+
+                            color = Color.White
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(
+                        modifier = Modifier.height(4.dp)
+                    )
 
                     Text(
                         text = "Attendance anomaly",
-                        fontSize = 17.sp,
+
+                        fontSize = 16.sp,
+
                         fontWeight = FontWeight.Bold,
+
                         color = Navy
                     )
                 }
+
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+
+                    contentDescription = "Open alert",
+
+                    tint = Blue,
+
+                    modifier = Modifier.size(19.dp)
+                )
             }
 
-            Spacer(modifier = Modifier.height(9.dp))
+            Spacer(
+                modifier = Modifier.height(11.dp)
+            )
 
             Text(
                 text = "Sunrise Rehabilitation Centre",
-                fontSize = 14.sp,
+
+                fontSize = 13.sp,
+
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF566474)
+
+                color = Color(0xFF526477)
             )
 
             Text(
                 text = "Varanasi, Uttar Pradesh",
-                fontSize = 12.sp,
+
+                fontSize = 11.sp,
+
                 color = TextGray
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(
+                modifier = Modifier.height(11.dp)
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+
+                horizontalArrangement =
+                    Arrangement.SpaceBetween
             ) {
 
                 Metric(
@@ -640,8 +915,14 @@ private fun AttentionCard() {
                 )
 
                 Metric(
+                    title = "Variance",
+                    value = "-23%",
+                    valueColor = Red
+                )
+
+                Metric(
                     title = "Updated",
-                    value = "12 min ago"
+                    value = "12 min"
                 )
             }
         }
@@ -664,16 +945,23 @@ private fun Metric(
 
         Text(
             text = title,
-            fontSize = 10.sp,
+
+            fontSize = 9.sp,
+
             color = TextGray
         )
 
-        Spacer(modifier = Modifier.height(1.dp))
+        Spacer(
+            modifier = Modifier.height(2.dp)
+        )
 
         Text(
             text = value,
-            fontSize = 15.sp,
+
+            fontSize = 14.sp,
+
             fontWeight = FontWeight.Bold,
+
             color = valueColor
         )
     }
@@ -681,128 +969,577 @@ private fun Metric(
 
 
 // ============================================================================
-// LIVE MONITORING
+// LIVE MONITORING CARD
 // ============================================================================
 
 @Composable
-private fun LiveMonitoringSection() {
+private fun LiveMonitoringCard(
+    onClick: () -> Unit
+) {
 
-    Column {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onClick()
+            },
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        shape = RoundedCornerShape(15.dp),
+
+        colors = CardDefaults.cardColors(
+            containerColor = SurfaceColor
+        ),
+
+        border = BorderStroke(
+            1.dp,
+            Border
+        )
+    ) {
+
+        Column(
+            modifier = Modifier.padding(14.dp)
         ) {
 
-            Text(
-                text = "Live Monitoring",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Navy,
-                modifier = Modifier.weight(1f)
-            )
+            // MAP VISUALIZATION
 
-            Text(
-                text = "View map",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Blue
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(17.dp),
-
-            colors = CardDefaults.cardColors(
-                containerColor = Surface
-            ),
-
-            border = BorderStroke(
-                1.dp,
-                Border
-            ),
-
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 1.dp
-            )
-        ) {
-
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(13.dp),
-
-                verticalAlignment = Alignment.CenterVertically
+                    .height(145.dp)
+                    .clip(
+                        RoundedCornerShape(12.dp)
+                    )
+                    .background(
+                        Color(0xFFEAF1F6)
+                    )
             ) {
 
-                Box(
-                    modifier = Modifier
-                        .size(70.dp)
-                        .clip(
-                            androidx.compose.foundation.shape.RoundedCornerShape(13.dp)
-                        )
-                        .background(SoftBlue),
+                // horizontal map lines
 
-                    contentAlignment = Alignment.Center
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+
+                    verticalArrangement =
+                        Arrangement.SpaceEvenly
                 ) {
 
-                    Icon(
-                        imageVector = Icons.Default.Map,
-                        contentDescription = null,
-                        tint = Blue,
-                        modifier = Modifier.size(32.dp)
-                    )
+                    repeat(5) {
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(
+                                    Color(0xFFD7E0E8)
+                                )
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.width(13.dp))
+
+                // vertical map lines
+
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+
+                    horizontalArrangement =
+                        Arrangement.SpaceEvenly,
+
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+
+                    repeat(4) {
+
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(145.dp)
+                                .background(
+                                    Color(0xFFD7E0E8)
+                                )
+                        )
+                    }
+                }
+
+
+                // PROJECT MARKERS
+
+                MapMarker(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(
+                            start = 55.dp,
+                            top = 32.dp
+                        ),
+
+                    color = Red,
+                    number = "2"
+                )
+
+
+                MapMarker(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(start = 25.dp),
+
+                    color = Green,
+                    number = "1"
+                )
+
+
+                MapMarker(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(
+                            end = 55.dp,
+                            top = 28.dp
+                        ),
+
+                    color = Amber,
+                    number = "3"
+                )
+
+
+                MapMarker(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(
+                            end = 85.dp,
+                            bottom = 25.dp
+                        ),
+
+                    color = Green,
+                    number = "1"
+                )
+
+
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(9.dp),
+
+                    shape = RoundedCornerShape(7.dp),
+
+                    color = Color.White.copy(
+                        alpha = 0.94f
+                    )
+                ) {
+
+                    Row(
+                        modifier = Modifier.padding(
+                            horizontal = 8.dp,
+                            vertical = 5.dp
+                        ),
+
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .clip(CircleShape)
+                                .background(Green)
+                        )
+
+                        Spacer(
+                            modifier = Modifier.width(5.dp)
+                        )
+
+                        Text(
+                            text = "LIVE MONITORING",
+
+                            fontSize = 8.sp,
+
+                            fontWeight =
+                                FontWeight.Bold,
+
+                            color = Navy
+                        )
+                    }
+                }
+            }
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
 
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
 
                     Text(
-                        text = "India Monitoring Map",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        text = "India Monitoring Network",
+
+                        fontSize = 15.sp,
+
+                        fontWeight =
+                            FontWeight.Bold,
+
                         color = Navy
                     )
 
-                    Spacer(modifier = Modifier.height(3.dp))
-
-                    Text(
-                        text = "128 projects across India",
-                        fontSize = 12.sp,
-                        color = TextGray
+                    Spacer(
+                        modifier = Modifier.height(3.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text =
+                            "128 projects currently monitored",
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
+                        fontSize = 11.sp,
 
-                        StatusItem(
-                            color = Green,
-                            value = "113",
-                            label = "Online"
+                        color = TextGray
+                    )
+                }
+
+                Icon(
+                    imageVector =
+                        Icons.Default.ArrowForward,
+
+                    contentDescription =
+                        "Open monitoring",
+
+                    tint = Blue,
+
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(11.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.SpaceBetween
+            ) {
+
+                MonitoringStatus(
+                    color = Green,
+                    value = "113",
+                    label = "Online"
+                )
+
+                MonitoringStatus(
+                    color = Red,
+                    value = "08",
+                    label = "Critical"
+                )
+
+                MonitoringStatus(
+                    color = Amber,
+                    value = "05",
+                    label = "Offline"
+                )
+
+                MonitoringStatus(
+                    color = Blue,
+                    value = "17",
+                    label = "Inspections"
+                )
+            }
+        }
+    }
+}
+
+
+// ============================================================================
+// MAP MARKER
+// ============================================================================
+
+@Composable
+private fun MapMarker(
+    modifier: Modifier,
+    color: Color,
+    number: String
+) {
+
+    Box(
+        modifier = modifier
+            .size(30.dp)
+            .clip(CircleShape)
+            .background(
+                color.copy(alpha = 0.18f)
+            ),
+
+        contentAlignment = Alignment.Center
+    ) {
+
+        Box(
+            modifier = Modifier
+                .size(14.dp)
+                .clip(CircleShape)
+                .background(color),
+
+            contentAlignment = Alignment.Center
+        ) {
+
+            Text(
+                text = number,
+
+                fontSize = 7.sp,
+
+                fontWeight = FontWeight.Bold,
+
+                color = Color.White
+            )
+        }
+    }
+}
+
+
+// ============================================================================
+// MONITORING STATUS
+// ============================================================================
+
+@Composable
+private fun MonitoringStatus(
+    color: Color,
+    value: String,
+    label: String
+) {
+
+    Column {
+
+        Row(
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(color)
+            )
+
+            Spacer(
+                modifier = Modifier.width(4.dp)
+            )
+
+            Text(
+                text = value,
+
+                fontSize = 12.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color = Navy
+            )
+        }
+
+        Text(
+            text = label,
+
+            fontSize = 9.sp,
+
+            color = TextGray
+        )
+    }
+}
+
+
+// ============================================================================
+// ATTENDANCE CARD
+// ============================================================================
+
+@Composable
+private fun AttendanceCard(
+    onClick: () -> Unit
+) {
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onClick()
+            },
+
+        shape = RoundedCornerShape(15.dp),
+
+        colors = CardDefaults.cardColors(
+            containerColor = SurfaceColor
+        ),
+
+        border = BorderStroke(
+            1.dp,
+            Border
+        )
+    ) {
+
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+
+            Row(
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(
+                            RoundedCornerShape(11.dp)
                         )
+                        .background(SoftBlue),
 
-                        StatusItem(
-                            color = Red,
-                            value = "15",
-                            label = "Alerts"
-                        )
+                    contentAlignment =
+                        Alignment.Center
+                ) {
 
-                        StatusItem(
-                            color = Blue,
-                            value = "5",
-                            label = "Offline"
-                        )
-                    }
+                    Icon(
+                        imageVector =
+                            Icons.Default.People,
+
+                        contentDescription =
+                            null,
+
+                        tint = Blue,
+
+                        modifier =
+                            Modifier.size(21.dp)
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.width(10.dp)
+                )
+
+                Column(
+                    modifier =
+                        Modifier.weight(1f)
+                ) {
+
+                    Text(
+                        text =
+                            "Overall Attendance",
+
+                        fontSize = 14.sp,
+
+                        fontWeight =
+                            FontWeight.Bold,
+
+                        color = Navy
+                    )
+
+                    Text(
+                        text =
+                            "Across monitored projects",
+
+                        fontSize = 10.sp,
+
+                        color = TextGray
+                    )
+                }
+
+                Text(
+                    text = "89%",
+
+                    fontSize = 21.sp,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
+                    color = Green
+                )
+            }
+
+            Spacer(
+                modifier =
+                    Modifier.height(13.dp)
+            )
+
+            AttendanceBar(
+                label =
+                    "Reported attendance",
+
+                value = 94,
+
+                color = Blue
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(9.dp)
+            )
+
+            AttendanceBar(
+                label =
+                    "AI detected attendance",
+
+                value = 89,
+
+                color = Green
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(10.dp)
+            )
+
+            Surface(
+                shape =
+                    RoundedCornerShape(8.dp),
+
+                color =
+                    SoftRed
+            ) {
+
+                Row(
+                    modifier =
+                        Modifier.padding(
+                            horizontal = 9.dp,
+                            vertical = 7.dp
+                        ),
+
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+
+                    Icon(
+                        imageVector =
+                            Icons.Default.Warning,
+
+                        contentDescription =
+                            null,
+
+                        tint = Red,
+
+                        modifier =
+                            Modifier.size(15.dp)
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(6.dp)
+                    )
+
+                    Text(
+                        text =
+                            "3 projects require attendance review",
+
+                        fontSize = 10.sp,
+
+                        fontWeight =
+                            FontWeight.SemiBold,
+
+                        color =
+                            Color(0xFF9F3030)
+                    )
                 }
             }
         }
@@ -811,44 +1548,541 @@ private fun LiveMonitoringSection() {
 
 
 // ============================================================================
-// STATUS ITEM
+// ATTENDANCE BAR
 // ============================================================================
 
 @Composable
-private fun StatusItem(
-    color: Color,
-    value: String,
-    label: String
+private fun AttendanceBar(
+    label: String,
+    value: Int,
+    color: Color
 ) {
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Column {
+
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            Text(
+                text = label,
+
+                modifier =
+                    Modifier.weight(1f),
+
+                fontSize = 10.sp,
+
+                color = TextGray
+            )
+
+            Text(
+                text = "$value%",
+
+                fontSize = 10.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color = Navy
+            )
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(5.dp)
+        )
 
         Box(
-            modifier = Modifier
-                .size(7.dp)
-                .clip(
-                    androidx.compose.foundation.shape.CircleShape
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(7.dp)
+                    .clip(
+                        RoundedCornerShape(10.dp)
+                    )
+                    .background(
+                        Color(0xFFE8EDF2)
+                    )
+        ) {
+
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth(
+                            value / 100f
+                        )
+                        .height(7.dp)
+                        .clip(
+                            RoundedCornerShape(10.dp)
+                        )
+                        .background(color)
+            )
+        }
+    }
+}
+
+
+// ============================================================================
+// CCTV CARD
+// ============================================================================
+
+@Composable
+private fun CctvCard(
+    onClick: () -> Unit
+) {
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onClick()
+                },
+
+        shape =
+            RoundedCornerShape(15.dp),
+
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    SurfaceColor
+            ),
+
+        border =
+            BorderStroke(
+                1.dp,
+                Border
+            )
+    ) {
+
+        Column(
+            modifier =
+                Modifier.padding(14.dp)
+        ) {
+
+            Row(
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                Box(
+                    modifier =
+                        Modifier
+                            .size(40.dp)
+                            .clip(
+                                RoundedCornerShape(11.dp)
+                            )
+                            .background(
+                                SoftGreen
+                            ),
+
+                    contentAlignment =
+                        Alignment.Center
+                ) {
+
+                    Icon(
+                        imageVector =
+                            Icons.Default.Videocam,
+
+                        contentDescription =
+                            null,
+
+                        tint =
+                            Green,
+
+                        modifier =
+                            Modifier.size(21.dp)
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.width(10.dp)
                 )
-                .background(color)
-        )
 
-        Spacer(modifier = Modifier.width(4.dp))
+                Column(
+                    modifier =
+                        Modifier.weight(1f)
+                ) {
 
-        Text(
-            text = value,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = Navy
-        )
+                    Text(
+                        text =
+                            "CCTV Network",
 
-        Spacer(modifier = Modifier.width(2.dp))
+                        fontSize =
+                            14.sp,
 
-        Text(
-            text = label,
-            fontSize = 10.sp,
-            color = TextGray
-        )
+                        fontWeight =
+                            FontWeight.Bold,
+
+                        color =
+                            Navy
+                    )
+
+                    Text(
+                        text =
+                            "113 of 118 cameras online",
+
+                        fontSize =
+                            10.sp,
+
+                        color =
+                            TextGray
+                    )
+                }
+
+                Text(
+                    text =
+                        "95.8%",
+
+                    fontSize =
+                        17.sp,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
+                    color =
+                        Green
+                )
+            }
+
+            Spacer(
+                modifier =
+                    Modifier.height(12.dp)
+            )
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(8.dp)
+            ) {
+
+                CctvStatus(
+                    modifier =
+                        Modifier.weight(1f),
+
+                    value =
+                        "113",
+
+                    label =
+                        "Online",
+
+                    color =
+                        Green
+                )
+
+                CctvStatus(
+                    modifier =
+                        Modifier.weight(1f),
+
+                    value =
+                        "03",
+
+                    label =
+                        "Offline",
+
+                    color =
+                        Amber
+                )
+
+                CctvStatus(
+                    modifier =
+                        Modifier.weight(1f),
+
+                    value =
+                        "02",
+
+                    label =
+                        "Tampering",
+
+                    color =
+                        Red
+                )
+            }
+        }
+    }
+}
+
+
+// ============================================================================
+// CCTV STATUS
+// ============================================================================
+
+@Composable
+private fun CctvStatus(
+    modifier: Modifier,
+    value: String,
+    label: String,
+    color: Color
+) {
+
+    Surface(
+        modifier = modifier,
+
+        shape =
+            RoundedCornerShape(9.dp),
+
+        color =
+            color.copy(alpha = 0.07f)
+    ) {
+
+        Column(
+            modifier =
+                Modifier.padding(10.dp)
+        ) {
+
+            Text(
+                text = value,
+
+                fontSize = 17.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color = color
+            )
+
+            Text(
+                text = label,
+
+                fontSize = 9.sp,
+
+                color = TextGray
+            )
+        }
+    }
+}
+
+
+// ============================================================================
+// INSPECTION CARD
+// ============================================================================
+
+@Composable
+private fun InspectionCard(
+    onClick: () -> Unit
+) {
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onClick()
+                },
+
+        shape =
+            RoundedCornerShape(15.dp),
+
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    SurfaceColor
+            ),
+
+        border =
+            BorderStroke(
+                1.dp,
+                Border
+            )
+    ) {
+
+        Column(
+            modifier =
+                Modifier.padding(14.dp)
+        ) {
+
+            Row(
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                Icon(
+                    imageVector =
+                        Icons.Default.Assignment,
+
+                    contentDescription =
+                        null,
+
+                    tint =
+                        Blue,
+
+                    modifier =
+                        Modifier.size(21.dp)
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.width(9.dp)
+                )
+
+                Text(
+                    text =
+                        "Inspection activity",
+
+                    modifier =
+                        Modifier.weight(1f),
+
+                    fontSize = 14.sp,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
+                    color = Navy
+                )
+
+                Icon(
+                    imageVector =
+                        Icons.Default.ArrowForward,
+
+                    contentDescription =
+                        "Open inspections",
+
+                    tint = Blue,
+
+                    modifier =
+                        Modifier.size(18.dp)
+                )
+            }
+
+            Spacer(
+                modifier =
+                    Modifier.height(13.dp)
+            )
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(7.dp)
+            ) {
+
+                InspectionStatus(
+                    modifier =
+                        Modifier.weight(1f),
+
+                    value =
+                        "17",
+
+                    label =
+                        "Pending",
+
+                    color =
+                        Amber
+                )
+
+                InspectionStatus(
+                    modifier =
+                        Modifier.weight(1f),
+
+                    value =
+                        "06",
+
+                    label =
+                        "Assigned",
+
+                    color =
+                        Blue
+                )
+
+                InspectionStatus(
+                    modifier =
+                        Modifier.weight(1f),
+
+                    value =
+                        "04",
+
+                    label =
+                        "In Progress",
+
+                    color =
+                        Green
+                )
+
+                InspectionStatus(
+                    modifier =
+                        Modifier.weight(1f),
+
+                    value =
+                        "31",
+
+                    label =
+                        "Completed",
+
+                    color =
+                        Navy
+                )
+            }
+        }
+    }
+}
+
+
+// ============================================================================
+// INSPECTION STATUS
+// ============================================================================
+
+@Composable
+private fun InspectionStatus(
+    modifier: Modifier,
+    value: String,
+    label: String,
+    color: Color
+) {
+
+    Surface(
+        modifier = modifier,
+
+        shape =
+            RoundedCornerShape(9.dp),
+
+        color =
+            Color(0xFFF8FAFC),
+
+        border =
+            BorderStroke(
+                1.dp,
+                Color(0xFFE8EDF2)
+            )
+    ) {
+
+        Column(
+            modifier =
+                Modifier.padding(8.dp)
+        ) {
+
+            Text(
+                text = value,
+
+                fontSize = 16.sp,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color = color
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(2.dp)
+            )
+
+            Text(
+                text = label,
+
+                fontSize = 8.sp,
+
+                color = TextGray,
+
+                maxLines = 1
+            )
+        }
     }
 }

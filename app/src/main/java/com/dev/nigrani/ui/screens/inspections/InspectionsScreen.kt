@@ -55,7 +55,14 @@ data class InspectionItem(
     val date: String,
     val priority: String,
     val status: String,
-    val reason: String
+    val reason: String,
+
+    // GPS coordinates of the institute
+    val latitude: Double,
+    val longitude: Double,
+
+    // Maximum distance allowed for location verification
+    val allowedRadiusMeters: Float = 100f
 )
 
 @Composable
@@ -64,9 +71,25 @@ fun InspectionsScreen(
     onInspectionClick: (InspectionItem) -> Unit = {}
 ) {
 
+    /*
+     * -------------------------------------------------------------------------
+     * TEMPORARY GPS DATA
+     * -------------------------------------------------------------------------
+     *
+     * These coordinates are only for frontend GPS testing.
+     *
+     * Later these values will come from the backend/database for each institute.
+     *
+     * DO NOT treat these as the real coordinates of the institutes.
+     */
+
     val inspections = remember {
 
         listOf(
+
+            // -----------------------------------------------------------------
+            // 1. SUNRISE REHABILITATION CENTRE
+            // -----------------------------------------------------------------
 
             InspectionItem(
                 id = "INS-2026-0905-014",
@@ -77,8 +100,16 @@ fun InspectionsScreen(
                 date = "05 Sep 2026 • 18:00",
                 priority = "Critical",
                 status = "Assigned",
-                reason = "Attendance anomaly detected"
+                reason = "Attendance anomaly detected",
+
+                latitude = 25.3176,
+                longitude = 82.9739,
+                allowedRadiusMeters = 100f
             ),
+
+            // -----------------------------------------------------------------
+            // 2. HOPE CARE INSTITUTE
+            // -----------------------------------------------------------------
 
             InspectionItem(
                 id = "INS-2026-0905-011",
@@ -89,8 +120,16 @@ fun InspectionsScreen(
                 date = "05 Sep 2026 • 16:30",
                 priority = "Normal",
                 status = "Pending",
-                reason = "Scheduled inspection"
+                reason = "Scheduled inspection",
+
+                latitude = 22.4000,
+                longitude = 82.9739,
+                allowedRadiusMeters = 100f
             ),
+
+            // -----------------------------------------------------------------
+            // 3. SAHYOG WELFARE CENTRE
+            // -----------------------------------------------------------------
 
             InspectionItem(
                 id = "INS-2026-0904-027",
@@ -101,8 +140,16 @@ fun InspectionsScreen(
                 date = "04 Sep 2026 • 17:00",
                 priority = "Critical",
                 status = "In Progress",
-                reason = "CCTV tampering detected"
+                reason = "CCTV tampering detected",
+
+                latitude = 29.8555,
+                longitude = 82.7600,
+                allowedRadiusMeters = 100f
             ),
+
+            // -----------------------------------------------------------------
+            // 4. JEEVAN JYOTI FOUNDATION
+            // -----------------------------------------------------------------
 
             InspectionItem(
                 id = "INS-2026-0904-018",
@@ -113,8 +160,16 @@ fun InspectionsScreen(
                 date = "04 Sep 2026 • Completed",
                 priority = "Normal",
                 status = "Completed",
-                reason = "CCTV offline verification"
+                reason = "CCTV offline verification",
+
+                latitude = 23.2599,
+                longitude = 77.4126,
+                allowedRadiusMeters = 100f
             ),
+
+            // -----------------------------------------------------------------
+            // 5. NAVJEEVAN SUPPORT CENTRE
+            // -----------------------------------------------------------------
 
             InspectionItem(
                 id = "INS-2026-0903-009",
@@ -125,7 +180,11 @@ fun InspectionsScreen(
                 date = "03 Sep 2026 • Completed",
                 priority = "Normal",
                 status = "Completed",
-                reason = "Scheduled inspection"
+                reason = "Scheduled inspection",
+
+                latitude = 25.5941,
+                longitude = 85.1376,
+                allowedRadiusMeters = 100f
             )
         )
     }
@@ -260,7 +319,6 @@ fun InspectionsScreen(
             }
         }
 
-
         // ================================================================
         // SUMMARY
         // ================================================================
@@ -306,7 +364,6 @@ fun InspectionsScreen(
             )
         }
 
-
         // ================================================================
         // SEARCH
         // ================================================================
@@ -348,7 +405,6 @@ fun InspectionsScreen(
                 modifier = Modifier.height(12.dp)
             )
         }
-
 
         // ================================================================
         // FILTERS
@@ -426,7 +482,6 @@ fun InspectionsScreen(
             )
         }
 
-
         // ================================================================
         // SECTION TITLE
         // ================================================================
@@ -460,7 +515,6 @@ fun InspectionsScreen(
             )
         }
 
-
         // ================================================================
         // INSPECTION CARDS
         // ================================================================
@@ -479,7 +533,6 @@ fun InspectionsScreen(
                 }
             )
         }
-
 
         // ================================================================
         // EMPTY STATE
@@ -526,7 +579,6 @@ fun InspectionsScreen(
             }
         }
 
-
         item {
 
             Spacer(
@@ -536,6 +588,10 @@ fun InspectionsScreen(
     }
 }
 
+
+// ============================================================================
+// INSPECTION STAT
+// ============================================================================
 
 @Composable
 private fun InspectionStat(
@@ -586,6 +642,10 @@ private fun InspectionStat(
     }
 }
 
+
+// ============================================================================
+// INSPECTION CARD
+// ============================================================================
 
 @Composable
 private fun InspectionCard(
@@ -702,11 +762,9 @@ private fun InspectionCard(
                 }
             }
 
-
             Spacer(
                 modifier = Modifier.height(10.dp)
             )
-
 
             // ------------------------------------------------------------
             // TYPE + STATUS
@@ -742,11 +800,9 @@ private fun InspectionCard(
                 }
             }
 
-
             Spacer(
                 modifier = Modifier.height(10.dp)
             )
-
 
             // ------------------------------------------------------------
             // REASON
@@ -790,11 +846,9 @@ private fun InspectionCard(
                 }
             }
 
-
             Spacer(
                 modifier = Modifier.height(10.dp)
             )
-
 
             // ------------------------------------------------------------
             // INSPECTOR + DATE
@@ -858,11 +912,9 @@ private fun InspectionCard(
                 )
             }
 
-
             Spacer(
                 modifier = Modifier.height(5.dp)
             )
-
 
             Text(
                 text = inspection.id,

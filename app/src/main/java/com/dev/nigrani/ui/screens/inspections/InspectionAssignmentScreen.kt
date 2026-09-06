@@ -61,7 +61,11 @@ fun InspectionAssignmentScreen(
         date = "05 Sep 2026 • 18:00",
         priority = "Critical",
         status = "Assigned",
-        reason = "Attendance anomaly detected"
+        reason = "Attendance anomaly detected",
+
+        latitude = 25.3176,
+        longitude = 82.9739,
+        allowedRadiusMeters = 100f
     )
 
     val scrollState = rememberScrollState()
