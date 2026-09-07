@@ -1,6 +1,7 @@
 package com.dev.nigrani.institute;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,13 +10,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/institutes")
+@RequiredArgsConstructor
 public class InstituteController {
 
     private final InstituteService instituteService;
-
-    public InstituteController(InstituteService instituteService) {
-        this.instituteService = instituteService;
-    }
 
     @GetMapping
     public ResponseEntity<List<InstituteResponse>> getAllInstitutes() {
