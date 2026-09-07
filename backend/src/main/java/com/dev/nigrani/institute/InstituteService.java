@@ -1,17 +1,18 @@
 package com.dev.nigrani.institute;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class InstituteService {
+
 
     private final InstituteRepository instituteRepository;
 
-    public InstituteService(InstituteRepository instituteRepository) {
-        this.instituteRepository = instituteRepository;
-    }
+
 
     public List<InstituteResponse> getAllInstitutes() {
         return instituteRepository.findAll()
