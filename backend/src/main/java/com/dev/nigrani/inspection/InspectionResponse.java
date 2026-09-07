@@ -19,6 +19,11 @@ public class InspectionResponse {
 
     private Long inspectorId;
 
+    private String type;
+    private String priority;
+    private String reason;
+    private Integer allowedRadiusMeters;
+
     private String status;
 
     private String overallRemarks;

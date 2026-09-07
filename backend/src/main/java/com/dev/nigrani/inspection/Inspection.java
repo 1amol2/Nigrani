@@ -30,6 +30,18 @@ public class Inspection {
     private Long inspectorId;
 
     @Column(nullable = false)
+    private String type;
+
+    @Column(nullable = false)
+    private String priority;
+
+    @Column(nullable = false)
+    private String reason;
+
+    @Column(nullable = false)
+    private Integer allowedRadiusMeters;
+
+    @Column(nullable = false)
     private String status;
 
     @Column

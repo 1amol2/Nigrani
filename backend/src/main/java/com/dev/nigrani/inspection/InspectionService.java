@@ -2,9 +2,11 @@ package com.dev.nigrani.inspection;
 
 import com.dev.nigrani.institute.Institute;
 import com.dev.nigrani.institute.InstituteRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -52,6 +54,10 @@ public class InspectionService {
                 .institute(institute)
                 .inspectionDate(request.getInspectionDate())
                 .inspectorId(request.getInspectorId())
+                .type(request.getType())
+                .priority(request.getPriority())
+                .reason(request.getReason())
+                .allowedRadiusMeters(request.getAllowedRadiusMeters())
                 .status(request.getStatus())
                 .overallRemarks(request.getOverallRemarks())
                 .latitude(request.getLatitude())
@@ -91,6 +97,10 @@ public class InspectionService {
         inspection.setInstitute(institute);
         inspection.setInspectionDate(request.getInspectionDate());
         inspection.setInspectorId(request.getInspectorId());
+        inspection.setType(request.getType());
+        inspection.setPriority(request.getPriority());
+        inspection.setReason(request.getReason());
+        inspection.setAllowedRadiusMeters(request.getAllowedRadiusMeters());
         inspection.setStatus(request.getStatus());
         inspection.setOverallRemarks(request.getOverallRemarks());
         inspection.setLatitude(request.getLatitude());
@@ -133,6 +143,10 @@ public class InspectionService {
                 .inspectorId(
                         inspection.getInspectorId()
                 )
+                .type(inspection.getType())
+                .priority(inspection.getPriority())
+                .reason(inspection.getReason())
+                .allowedRadiusMeters(inspection.getAllowedRadiusMeters())
                 .status(
                         inspection.getStatus()
                 )
@@ -161,5 +175,30 @@ public class InspectionService {
                         inspection.getUpdatedAt()
                 )
                 .build();
+    }
+    @Transactional
+    public InspectionResponse completeInspection(Long id) {
+
+        Inspection inspection = inspectionRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Inspection not found with id: " + id
+                        )
+                );
+
+        Instant now = Instant.now();
+
+        inspection.setStatus("COMPLETED");
+        inspection.setCompletedAt(now);
+
+        Institute institute = inspection.getInstitute();
+        institute.setLastChecked(now);
+
+        instituteRepository.save(institute);
+
+        Inspection completedInspection =
+                inspectionRepository.save(inspection);
+
+        return toResponse(completedInspection);
     }
 }

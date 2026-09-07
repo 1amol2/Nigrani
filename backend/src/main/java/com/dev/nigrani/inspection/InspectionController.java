@@ -63,4 +63,12 @@ public class InspectionController {
 
         return ResponseEntity.noContent().build();
     }
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<InspectionResponse> completeInspection(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                inspectionService.completeInspection(id)
+        );
+    }
 }
