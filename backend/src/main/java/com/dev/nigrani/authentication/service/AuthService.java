@@ -1,8 +1,9 @@
 package com.dev.nigrani.authentication.service;
 
-import com.dev.nigrani.authentication.models.User;
+import com.dev.nigrani.authentication.dtos.AuthResponse;
+import com.dev.nigrani.authentication.dtos.LoginRequest;
 
 public interface AuthService {
-    User register(User user);
-    User login(User loginUser);
+
+    AuthResponse login(LoginRequest request);
 }

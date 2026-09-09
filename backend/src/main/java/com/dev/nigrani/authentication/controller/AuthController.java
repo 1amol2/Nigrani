@@ -12,18 +12,13 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    private final AuthService authService;
-    private final JwtService jwtService;
 
-    @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse register(@RequestBody RegisterRequest request) {
-        return UserResponse.fromModel(authService.register(request.toModel()));
-    }
+    private final AuthService authService;
 
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody LoginRequest request) {
-        User user = authService.login(request.toModel());
-        return AuthResponse.fromModel(user, jwtService.generateToken(user));
+    public AuthResponse login(
+            @RequestBody LoginRequest request) {
+
+        return authService.login(request);
     }
 }
