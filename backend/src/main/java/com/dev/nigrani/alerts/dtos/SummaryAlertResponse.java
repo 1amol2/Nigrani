@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SummaryAlertResponse {
-
+//we did not want for every alert these three things we only want it once on our alert page
     private long totalAlerts;
     private long criticalAlerts;
     private long warningAlerts;

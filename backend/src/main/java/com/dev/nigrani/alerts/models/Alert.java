@@ -39,7 +39,6 @@ import java.time.LocalDateTime;
         @Column(nullable = false)
         private Long instituteId;
 
-
         @Column(nullable = false, length = 200)
         private String instituteName;
 
@@ -71,15 +70,15 @@ import java.time.LocalDateTime;
         @Column(length = 500)
         private String evidenceReference;
 
-        private Integer reportedValue;
-        private Integer detectedValue;
-        private Integer variance;
+        private Integer reportedValue;// what shld be the safe value
+        private Integer detectedValue;// what is the actual value
+        private Integer variance;//it helps in determining whether it
 
         @Column(nullable = false, updatable = false)
         private LocalDateTime detectedAt;
 
         @Column(nullable = false, updatable = false)
-        private LocalDateTime createdAt;
+        private LocalDateTime createdAt;//this will be useful when creation time and detected time is not the same
 
         private LocalDateTime updatedAt;
 
