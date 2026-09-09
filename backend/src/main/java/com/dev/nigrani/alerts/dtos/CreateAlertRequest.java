@@ -12,11 +12,6 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-/**
- * Data received by the backend when a new alert is created.
- * It deliberately does not contain database-generated fields such as id,
- * createdAt, updatedAt, status, source, or riskScore.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -48,14 +43,11 @@ public class CreateAlertRequest {
     @Max(value = 100, message = "Confidence score cannot be greater than 100")
     private Integer confidenceScore;
 
-    /** Optional permanent evidence URL/key/reference. */
-    private String evidenceReference;
+    private String evidenceReference;//image primarily
 
-    /** These three values are used only for an attendance-anomaly dashboard card. */
     private Integer reportedValue;
     private Integer detectedValue;
     private Integer variance;
 
-    /** Optional: if absent, the service will use the current date and time. */
     private LocalDateTime detectedAt;
 }

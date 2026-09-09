@@ -10,10 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-/**
- * Data sent to Android for one alert in the list or the alert-details screen.
- * This is not the database entity; it is the API's safe response shape.
- */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
